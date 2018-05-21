@@ -61,7 +61,7 @@ class HTTPFetcher():
 
     def _use_selenium(self, waiting_time=0):
         r = webdriver.Chrome(
-            './crawler/driver/chromedriver', desired_capabilities=self.__d)
+            './driver/chromedriver', desired_capabilities=self.__d)
         try:
             r.get(self.__url)
             time.sleep(waiting_time)

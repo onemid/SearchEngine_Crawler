@@ -30,7 +30,7 @@ class LinkExtractor():
                     self.__extract_url.append(link)
                 elif link.lstrip().startswith('//'):
                     self.__extract_url.append(
-                        parsed['scheme'] + ':' + link)
+                        parsed['scheme'] + link)
                 elif link.lstrip().startswith('/'):
                     self.__extract_url.append(
                         parsed['scheme'] + '//' + parsed['domain_name'] + link)

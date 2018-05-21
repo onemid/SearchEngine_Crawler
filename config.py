@@ -4,7 +4,7 @@ import configparser
 class Config():
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read('./crawler/config/basic_settings.ini')
+        config.read('./config/basic_settings.ini')
 
         self.urls = config.get('BASIC_SETTINGS', 'urls', raw=False)
         self.urls = self.urls.split(",")
@@ -27,7 +27,7 @@ class Config():
             'ELASTICSEARCH', 'doc_type', raw=False)
 
         self.config_rule = configparser.ConfigParser()
-        self.config_rule.read('./crawler/config/url_filter.ini')
+        self.config_rule.read('./config/url_filter.ini')
 
         self.exc_rules = self.config_rule.get(
             'EXCLUSION', 'exclusion', raw=False)
