@@ -53,8 +53,9 @@ class Logger():
             VALUES ("%s", "%s", "%s", "%s", "%s", %s, "%s", 0, "%s")
             '''
 
-            logger_cursor.execute(execute_string_insert % (self.url,
-                                                           self.scheme, self.domain_name, self.web_path, self.query, 0, 'FINISHED', str(datetime.datetime.now())))
+            logger_cursor.execute(execute_string_insert % (self.url, self.scheme, self.domain_name,
+                                                           self.web_path, self.query, 0, 'FINISHED',
+                                                           str(datetime.datetime.now())))
             self.conn.commit()
             return {'FETCH_TIME': 0, 'LATEST_TIMESTAMP': 'NEW_RECORD'}
 

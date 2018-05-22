@@ -17,5 +17,9 @@ class DupURLDel():
         self.urls_seen.add(url)
         return
 
+    def union_urls_seen(self, urls):
+        self.urls_seen.union(urls)
+        return
+
     def get_urls_seen(self):
         return self.urls_seen

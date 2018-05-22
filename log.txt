@@ -1,0 +1,15 @@
+======= Depth: 1 / 10 =======
+[>] 13 URL(s) to process
+Time:11.415982961654663
+======= Depth: 2 / 10 =======
+[>] 2231 URL(s) to process
+Time:846.5060000419617
+======= Depth: 1 / 10 =======
+[>] 13 URL(s) to process
+Time:10.821941614151001
+======= Depth: 1 / 10 =======
+[>] 13 URL(s) to process
+Time:10.67633581161499
+======= Depth: 2 / 10 =======
+[>] 2231 URL(s) to process
+Time:590.7678487300873

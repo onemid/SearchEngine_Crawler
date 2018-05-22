@@ -13,6 +13,7 @@ import sys
 import datetime
 import config
 import contentparser
+import time
 
 
 class Distributor():
@@ -27,6 +28,7 @@ class Distributor():
         # self.__urls = cfg.urls
         self.__terminate = False
         self.__dud = urlseen.DupURLDel()
+        self.__title_seen = urlseen.DupURLDel()
         self.__urls = set(cfg.urls)
         self.__finished_urls = set()
         self.__render = cfg.render
@@ -64,27 +66,41 @@ class Distributor():
 
     def dispatcher(self):
 
-        if os.path.isfile(self.__checkpoint + '/pending_urls.chkpt'):
+        if self.__need_checkpoint and os.path.isfile(self.__checkpoint + '/pending_urls.chkpt'):
             print('[i] Previous Work Stage Found')
             tmp_urls = self.__chkpt.recover('/pending_urls.chkpt')
             tmp_urls_seen = self.__chkpt.recover('/urls_seen.chkpt')
+            tmp_title_seen = self.__chkpt.recover('/title_seen.chkpt')
             self.__urls = tmp_urls if len(tmp_urls) else self.__urls
             self.__dud = urlseen.DupURLDel(
                 tmp_urls_seen) if len(tmp_urls_seen) else urlseen.DupURLDel()
-        elif self.__checkpoint == '':
+            self.__title_seen = urlseen.DupURLDel(
+                tmp_title_seen) if len(tmp_title_seen) else urlseen.DupURLDel()
+        elif not self.__need_checkpoint:
             print('[i] Checkpoint Features Disabled')
         else:
             print('[i] Previous Work Stage Not Found; Using Default')
 
-        p = mp.Pool(processes=self.__workers)
         depth = 1
 
         while not self.__terminate:
             print('======= Depth: %d / %d =======' % (depth, self.__max_depth))
             print('[>] %s URL(s) to process\r' % (len(self.__urls)))
-
+            start_time = time.time()
+            p = mp.Pool(processes=self.__workers)
             reps = p.map(self._job, (i for i in enumerate(self.__urls)))
+
+            with open('/home/garygone/flowoverstack/crawler/log.txt', "a+") as f:
+                f.write('======= Depth: %d / %d =======\n' %
+                        (depth, self.__max_depth))
+                f.write('[>] %s URL(s) to process\n' % (len(self.__urls)))
+
             self.__urls = set()
+
+            for rep in reps:
+                # print(rep["seen"])
+                self.__dud.add_to_urls_seen(rep["seen"])
+                self.__dud.add_to_urls_seen(rep["seen_new"])
 
             for rep in reps:
                 after_verify_urls = urlfilter.URLFilter(
@@ -92,12 +108,19 @@ class Distributor():
                 after_verify_urls = after_verify_urls.filter()
                 self.__urls = self.__urls.union(after_verify_urls)
 
-            if self.__checkpoint != '':
+            end_time = time.time()
+
+            with open('./log.txt', "a+") as f:
+                f.write('Time:' + str(end_time - start_time) + '\n')
+
+            if self.__need_checkpoint:
                 self.__chkpt.store(self.__urls, '/pending_urls.chkpt')
                 self.__chkpt.store(
                     self.__dud.get_urls_seen(), '/urls_seen.chkpt')
 
             depth += 1
+            p.close()
+            p.join()
             if depth > self.__max_depth or self.__urls == set():
                 self.__terminate = True
 
@@ -114,44 +137,50 @@ class Distributor():
 
         if status_code != 429:
             if page_source != '':
-                if self.__need_source_store:
-                    storage = store.Store(self.__storage, new_url)
-                    storage.store(page_source)
 
                 cnt_paser = contentparser.ContentParser()
                 cnt_result = cnt_paser.content_parsing(page_source)
 
-                if self.__need_parsed_store:
-                    cnt_storage = store.Store(self.__content_parsed, new_url)
-                    content_to_store = ''
-                    for key, value in cnt_result.items():
-                        content_to_store += '@' + \
-                            str(key) + ':' + str(value) + '\n'
-                    cnt_storage.store(content_to_store)
+                if not self.__title_seen.check_if_seen(cnt_result["title"]):
 
-                
+                    if self.__need_source_store:
+                        storage = store.Store(self.__storage, new_url)
+                        storage.store(page_source)
 
-                if self.__need_es_store:
-                    cnt_result["url"] = new_url
-                    cnt_result["links"] = len(result)
-                    es_storage = store.Store()
-                    es_storage.store_to_es(
-                        self.__es_index, self.__es_doc_type, cnt_result)
+                    if self.__need_parsed_store:
+                        cnt_storage = store.Store(
+                            self.__content_parsed, new_url)
+                        content_to_store = ''
+                        for key, value in cnt_result.items():
+                            content_to_store += '@' + \
+                                str(key) + ':' + str(value) + '\n'
+                        cnt_storage.store(content_to_store)
 
-            self.__dud.add_to_urls_seen(url)
-            self.__dud.add_to_urls_seen(new_url)
-            self.__urls.remove(url)
+                    if self.__need_es_store:
+                        cnt_result["url"] = new_url
+                        cnt_result["links"] = len(result)
+                        es_storage = store.Store()
+                        es_storage.store_to_es(
+                            self.__es_index, self.__es_doc_type, cnt_result)
+
+                    # self.__title_seen.add_to_urls_seen(cnt_result["title"])
+
+            # self.__dud.add_to_urls_seen(url)
+            # self.__dud.add_to_urls_seen(new_url)
+            # self.__urls.remove(url)
 
             if self.__need_db_log:
                 log = logger.Logger(self.__db + '/url_seen')
                 log.log_seen(url)
                 log.log_seen(new_url)
 
-            if self.__need_checkpoint and idx % 10 == 0:
-                print('[@] Saving Checkpoint [%s]............................\r' % (
-                    str(datetime.datetime.now())))
-                self.__chkpt.store(self.__urls, '/pending_urls.chkpt')
-                self.__chkpt.store(
-                    self.__dud.get_urls_seen(), '/urls_seen.chkpt')
+            # if self.__need_checkpoint and idx % 10 == 0:
+            #     print('[@] Saving Checkpoint [%s]............................\r' % (
+            #         str(datetime.datetime.now())))
+            #     self.__chkpt.store(self.__urls, '/pending_urls.chkpt')
+            #     self.__chkpt.store(
+            #         self.__dud.get_urls_seen(), '/urls_seen.chkpt')
+            #     self.__chkpt.store(
+            #         self.__title_seen.get_urls_seen(), '/title_seen.chkpt')
 
-        return {'result': result, 'status_code': status_code}
+        return {'result': result, 'status_code': status_code, 'seen': url, 'seen_new': new_url}

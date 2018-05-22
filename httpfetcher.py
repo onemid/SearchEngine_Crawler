@@ -54,6 +54,7 @@ class HTTPFetcher():
             r = requests.get(self.__url)
             self.__status_code = r.status_code
             r.encoding = self.__encoding if self.__encoding != '' else r.encoding
+            self.__url = r.url
             self.__text = r.text if self.__status_code == 200 else ''
         except Exception:
             pass
@@ -101,7 +102,7 @@ class HTTPFetcher():
             if self.__status_code == 404:
                 print('%s[!] Response [%d]%s: %s\r' %
                       (bc.OKBLUE, self.__status_code, bc.ENDC, self.__url))
-            
+
             if self.__status_code == 429:
                 self._be_a_good_bot(300)
 

@@ -2,6 +2,7 @@ import os
 import sys
 import hashlib
 from elasticsearch import Elasticsearch
+import time
 
 
 class Store():
@@ -20,5 +21,19 @@ class Store():
 
     def store_to_es(self, index, doc_type, body):
         es = Elasticsearch()
-        res = es.index(index=index, doc_type=doc_type, body=body)
+        try:
+            res = es.index(index=index, doc_type=doc_type, body=body)
+        except Exception:
+            time.sleep(10)
+            try:
+                res = es.index(index=index, doc_type=doc_type, body=body)
+            except Exception:
+                time.sleep(20)
+                try:
+                    res = es.index(index=index, doc_type=doc_type, body=body)
+                except Exception:
+                    print('[X] ES Index Error.')
+                    res = None
+                    pass
+
         return res

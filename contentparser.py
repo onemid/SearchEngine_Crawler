@@ -30,36 +30,35 @@ class ContentParser():
         sys.stdout.flush()
         try:
             self.title = r.title.string
+            title = r.find("meta",  attrs={"property":"og:title"})
+            url = r.find("meta",  attrs={"property":"og:url"})
+            description = r.find("meta",  attrs={"property":"og:description"})
+            image = r.find("meta",  attrs={"property":"og:image"})
+
+            self.property_og_title = title["content"] if title else ""
+            self.property_og_url = url["content"] if url else self.property_og_url
+            self.property_og_description = description["content"] if description else self.property_og_description
+            self.property_og_image = image["content"] if image else self.property_og_image
+
+            name = r.find("meta",  attrs={"itemprop":"name"})
+            description = r.find("meta",  attrs={"itemprop":"description"})
+            image = r.find("meta",  attrs={"itemprop":"og:image"})
+
+            self.itemprop_name = name["content"] if name else self.itemprop_name
+            self.property_og_description = description["content"] if description else self.property_og_description
+            self.property_og_image = image["content"] if image else self.property_og_image
+
+            author = r.find("meta",  attrs={"name":"author"})
+            description = r.find("meta",  attrs={"name":"description"})
+            image = r.find("meta",  attrs={"name":"image"})
+
+            self.name_author = author["content"] if author else self.name_author
+            self.property_og_description = description["content"] if description else self.property_og_description
+            self.property_og_image = image["content"] if image else self.property_og_image
         except:
-            print('%s[!] Content Parsing Error - Unknown Title%s\r' %
+            print('%s[!] Content Parsing Error - Unknown Elements%s\r' %
                   (bc.OKBLUE, bc.ENDC))
-            self.title = 'unknown'
-
-        title = r.find("meta",  attrs={"property":"og:title"})
-        url = r.find("meta",  attrs={"property":"og:url"})
-        description = r.find("meta",  attrs={"property":"og:description"})
-        image = r.find("meta",  attrs={"property":"og:image"})
-
-        self.property_og_title = title["content"] if title else ""
-        self.property_og_url = url["content"] if url else self.property_og_url
-        self.property_og_description = description["content"] if description else self.property_og_description
-        self.property_og_image = image["content"] if image else self.property_og_image
-
-        name = r.find("meta",  attrs={"itemprop":"name"})
-        description = r.find("meta",  attrs={"itemprop":"description"})
-        image = r.find("meta",  attrs={"itemprop":"og:image"})
-
-        self.itemprop_name = name["content"] if name else self.itemprop_name
-        self.property_og_description = description["content"] if description else self.property_og_description
-        self.property_og_image = image["content"] if image else self.property_og_image
-
-        author = r.find("meta",  attrs={"name":"author"})
-        description = r.find("meta",  attrs={"name":"description"})
-        image = r.find("meta",  attrs={"name":"image"})
-
-        self.name_author = author["content"] if author else self.name_author
-        self.property_og_description = description["content"] if description else self.property_og_description
-        self.property_og_image = image["content"] if image else self.property_og_image
+            self.title = ''
 
         for script in r(["script", "style", "nav", "form", "footer", "noscript", "header"]):
             script.decompose()  # rip it out
